@@ -1,76 +1,121 @@
 """
 Language encoder module for processing textual instructions.
 
-This module implements a text embedding model that encodes
-natural language instructions into fixed-size embeddings.
+This module uses a pre-trained sentence encoder to convert natural language
+instructions into fixed-size embeddings.
 """
 
 import torch
 import torch.nn as nn
-from typing import Optional
+from typing import Union, List
+from sentence_transformers import SentenceTransformer
 
 
 class LanguageEncoder(nn.Module):
     """
-    Text embedding model for encoding natural language instructions.
+    Pre-trained sentence encoder for encoding natural language instructions.
     
-    Takes instruction strings as input and produces fixed-size language
-    embeddings suitable for fusion with visual representations.
+    Uses a pre-trained sentence transformer model to convert text instructions
+    into fixed-size embeddings. The pre-trained weights are frozen by default.
+    
+    Features:
+    - Pre-trained sentence transformer (frozen weights)
+    - Normalized embeddings
+    - Simple interface: takes string instructions directly
     """
     
     def __init__(self, 
-                 vocab_size: int = 10000,
-                 embedding_dim: int = 256,
-                 hidden_dim: int = 512,
-                 max_seq_length: int = 128):
+                 model_name: str = "all-MiniLM-L6-v2",
+                 embedding_dim: int = 384,
+                 freeze_weights: bool = True,
+                 normalize: bool = True):
         """
         Initialize the language encoder.
         
         Args:
-            vocab_size: Size of the vocabulary
-            embedding_dim: Dimension of the output embedding
-            hidden_dim: Hidden dimension for the encoder
-            max_seq_length: Maximum sequence length for input text
+            model_name: Name of the pre-trained sentence transformer model
+            embedding_dim: Dimension of the output embedding (model-dependent)
+            freeze_weights: Whether to freeze the pre-trained model weights
+            normalize: Whether to normalize the embeddings to unit length
         """
         super().__init__()
         self.embedding_dim = embedding_dim
-        self.max_seq_length = max_seq_length
+        self.normalize = normalize
         
-        # Word embedding layer
-        self.word_embedding = nn.Embedding(vocab_size, hidden_dim)
+        # Load pre-trained sentence transformer
+        self.sentence_model = SentenceTransformer(model_name)
         
-        # LSTM for sequence encoding
-        self.lstm = nn.LSTM(hidden_dim, hidden_dim, 
-                           batch_first=True, 
-                           bidirectional=True)
+        # Get actual embedding dimension from the model
+        # Test with a dummy sentence to get the output dimension
+        with torch.no_grad():
+            test_embedding = self.sentence_model.encode(["test"], convert_to_tensor=True)
+            self.embedding_dim = test_embedding.shape[1]
         
-        # Projection to embedding dimension
-        self.projection = nn.Linear(hidden_dim * 2, embedding_dim)
+        # Freeze pre-trained weights if requested
+        if freeze_weights:
+            for param in self.sentence_model.parameters():
+                param.requires_grad = False
+            self.sentence_model.eval()
         
-    def forward(self, text_tokens: torch.Tensor) -> torch.Tensor:
+        # Optional projection layer if we need a different embedding dimension
+        # For now, we use the model's native dimension
+        self.projection = None
+        if embedding_dim != self.embedding_dim:
+            self.projection = nn.Linear(self.embedding_dim, embedding_dim)
+            self.embedding_dim = embedding_dim
+    
+    def forward(self, instructions: Union[str, List[str]]) -> torch.Tensor:
         """
-        Encode text tokens into a language embedding.
+        Encode text instructions into language embeddings.
         
         Args:
-            text_tokens: Input token indices of shape (batch, seq_length)
+            instructions: Single instruction string or list of instruction strings
+            
+        Returns:
+            Language embedding tensor of shape (batch, embedding_dim)
+            If single string, batch=1
+        """
+        # Handle single string input
+        if isinstance(instructions, str):
+            instructions = [instructions]
+        
+        # Encode instructions using pre-trained model
+        # If weights are frozen, use no_grad for efficiency
+        if not any(p.requires_grad for p in self.sentence_model.parameters()):
+            # All weights frozen, use no_grad
+            with torch.no_grad():
+                embeddings = self.sentence_model.encode(
+                    instructions,
+                    convert_to_tensor=True,
+                    normalize_embeddings=False  # We'll normalize manually after projection
+                )
+        else:
+            # Some weights trainable, enable gradients
+            embeddings = self.sentence_model.encode(
+                instructions,
+                convert_to_tensor=True,
+                normalize_embeddings=False  # We'll normalize manually after projection
+            )
+        
+        # Apply projection if needed
+        if self.projection is not None:
+            embeddings = self.projection(embeddings)
+        
+        # Normalize embeddings to unit length
+        if self.normalize:
+            embeddings = nn.functional.normalize(embeddings, p=2, dim=1)
+        
+        return embeddings
+    
+    def encode(self, instruction: Union[str, List[str]]) -> torch.Tensor:
+        """
+        Alias for forward method for more explicit interface.
+        
+        Args:
+            instruction: Single instruction string or list of instruction strings
             
         Returns:
             Language embedding tensor of shape (batch, embedding_dim)
         """
-        # Embed tokens
-        embedded = self.word_embedding(text_tokens)
-        
-        # Encode sequence
-        lstm_out, (hidden, _) = self.lstm(embedded)
-        
-        # Use the last hidden state from both directions
-        # Concatenate forward and backward hidden states
-        hidden_forward = hidden[0]
-        hidden_backward = hidden[1]
-        combined_hidden = torch.cat([hidden_forward, hidden_backward], dim=1)
-        
-        # Project to embedding dimension
-        embedding = self.projection(combined_hidden)
-        
-        return embedding
+        return self.forward(instruction)
 
