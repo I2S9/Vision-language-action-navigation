@@ -28,7 +28,7 @@ The fused representation is mapped to discrete action logits through another MLP
 
 ## Demonstration
 
-![Agent Demonstration](./demos/demonstration.gif)
+![Agent Demonstration](https://github.com/I2S9/Vision-language-action-navigation/raw/main/demos/demonstration.gif)
 
 The GIF above shows the agent navigating in a simulated environment while following the instruction "Navigate to the green goal". Each frame displays the current observation, the instruction, the selected action, and the cumulative reward.
 
