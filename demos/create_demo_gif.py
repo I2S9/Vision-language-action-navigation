@@ -47,21 +47,19 @@ def create_demo_frame(step: int, action: int, instruction: str, reward: float,
     agent_pixel_x = agent_x * cell_size + cell_size // 2
     agent_pixel_y = agent_y * cell_size + cell_size // 2
     
-    # Robot bleu (carré simple) pour l'agent - AGRANDI
+    # Robot bleu (cercle) pour l'agent - AGRANDI
     agent_size = cell_size // 1.8  # Robot plus grand
-    agent_half = agent_size // 2
+    agent_radius = agent_size // 2
     
-    # Dessiner un carré simple pour le robot (sans contour)
-    robot_box = [
-        agent_pixel_x - agent_half,
-        agent_pixel_y - agent_half,
-        agent_pixel_x + agent_half,
-        agent_pixel_y + agent_half
-    ]
-    draw.rectangle(robot_box, fill=(0, 100, 255))
+    # Dessiner un cercle bleu pour le robot (sans contour)
+    draw.ellipse([agent_pixel_x - agent_radius, 
+                  agent_pixel_y - agent_radius,
+                  agent_pixel_x + agent_radius,
+                  agent_pixel_y + agent_radius], 
+                 fill=(0, 100, 255))
     
     # Flèche pour indiquer l'orientation (0=North, 1=East, 2=South, 3=West)
-    arrow_length = agent_half + 8
+    arrow_length = agent_radius + 8
     arrow_end_x = agent_pixel_x
     arrow_end_y = agent_pixel_y
     
