@@ -2,6 +2,10 @@
 
 > This project implements a Vision-Language-Action (VLA) system for robotic navigation in a simulated environment. The system designs an embodied AI agent that can execute natural language navigation instructions using visual perception and learned decision-making policies.
 
+![Agent Demonstration](https://github.com/I2S9/Vision-language-action-navigation/raw/main/demos/demonstration.gif)
+
+The GIF above shows the agent navigating in a simulated environment while following the instruction "Navigate to the green goal". Each frame displays the current observation, the instruction, the selected action, and the cumulative reward.
+
 ## Problem Statement
 
 Traditional navigation systems require explicit programming or mapping, limiting their flexibility. This project addresses the challenge of creating an agent that can understand natural language instructions and translate them into navigation actions using only visual observations. The agent must generalize to unseen environments and follow diverse instructions without task-specific training.
@@ -25,12 +29,6 @@ Visual and language embeddings are concatenated along the feature dimension, the
 ### Policy Network
 
 The fused representation is mapped to discrete action logits through another MLP. The policy network outputs logits for four actions: turn left, turn right, move forward, and pick up/drop/toggle. Actions are selected using argmax during evaluation.
-
-## Demonstration
-
-![Agent Demonstration](https://github.com/I2S9/Vision-language-action-navigation/raw/main/demos/demonstration.gif)
-
-The GIF above shows the agent navigating in a simulated environment while following the instruction "Navigate to the green goal". Each frame displays the current observation, the instruction, the selected action, and the cumulative reward.
 
 ## Installation
 
