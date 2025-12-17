@@ -56,10 +56,11 @@ logs/
 wandb/
 tensorboard/
 
-# Demo outputs
-demos/*.gif
+# Demo outputs (keep demonstration.gif for README)
 demos/*.mp4
 demos/*.png
+# Allow demonstration.gif to be committed
+!demos/demonstration.gif
 
 # Environment variables
 .env
