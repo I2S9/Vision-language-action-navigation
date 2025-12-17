@@ -145,7 +145,7 @@ class VisionEncoder(nn.Module):
         x = F.relu(self.conv3(x))
         
         # Flatten feature maps
-        x = x.view(x.size(0), -1)
+        x = x.reshape(x.size(0), -1)
         
         # Fully connected layer to produce embedding
         visual_embedding = self.fc(x)

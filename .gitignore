@@ -56,6 +56,11 @@ logs/
 wandb/
 tensorboard/
 
+# Demo outputs
+demos/*.gif
+demos/*.mp4
+demos/*.png
+
 # Environment variables
 .env
 .env.local
